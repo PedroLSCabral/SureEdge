@@ -11,9 +11,14 @@ function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
 
-function gridColor() {
+// Resolve a CSS variable to its actual computed value (required for Chart.js)
+function cssVar(name) {
   return getComputedStyle(document.documentElement)
-    .getPropertyValue('--chart-grid').trim();
+    .getPropertyValue(name).trim();
+}
+
+function gridColor() {
+  return cssVar('--chart-grid');
 }
 
 // ─── LUCRO ACUMULADO ─────────────────────────────────────────────────────────
@@ -43,7 +48,7 @@ export function chartLucroAcumulado(rows) {
       const t = r.data.slice(-5);
       labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + t);
       dataAcc.push(acc);
-      ptColors.push(r.lucro >= 0 ? 'var(--green)' : 'var(--red)');
+      ptColors.push(r.lucro >= 0 ? cssVar('--green') : cssVar('--red'));
       ptSizes.push(r.lucro < 0 ? 6 : 4);
     }
 
@@ -62,7 +67,7 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
+      badge.style.color = isPos ? cssVar('--green') : cssVar('--red');
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
@@ -71,7 +76,7 @@ export function chartLucroAcumulado(rows) {
         {
           label: 'Acum. por aposta',
           data: dataAcc,
-          borderColor: isPos ? 'var(--green)' : 'var(--red)',
+          borderColor: isPos ? cssVar('--green') : cssVar('--red'),
           backgroundColor: grad,
           borderWidth: 2,
           pointRadius: ptSizes,
@@ -87,7 +92,7 @@ export function chartLucroAcumulado(rows) {
           pointRadius: dayEndData.map(v => v !== null ? 8 : 0),
           pointStyle: 'rectRot',
           pointBackgroundColor: dayEndData.map(v =>
-            v === null ? 'transparent' : v >= 0 ? 'var(--blue)' : 'var(--red)'
+            v === null ? 'transparent' : v >= 0 ? cssVar('--blue') : cssVar('--red')
           ),
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
@@ -133,18 +138,18 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
+      badge.style.color = isPos ? cssVar('--green') : cssVar('--red');
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets: [{
         data,
-        borderColor: isPos ? 'var(--green)' : 'var(--red)',
+        borderColor: isPos ? cssVar('--green') : cssVar('--red'),
         backgroundColor: grad,
         borderWidth: 2,
         pointRadius: labels.length > 30 ? 0 : 3,
-        pointBackgroundColor: isPos ? 'var(--green)' : 'var(--red)',
+        pointBackgroundColor: isPos ? cssVar('--green') : cssVar('--red'),
         tension: 0.35, fill: true,
       }]},
       options: {
@@ -221,8 +226,8 @@ export function chartCasa(rows) {
       labels: sorted.map(s => s[0]),
       datasets: [{
         data: vals,
-        backgroundColor: vals.map(v => v >= 0 ? 'var(--green-dim)' : 'var(--red-dim)'),
-        borderColor:     vals.map(v => v >= 0 ? 'var(--green)'     : 'var(--red)'),
+        backgroundColor: vals.map(v => v >= 0 ? cssVar('--green-dim') : cssVar('--red-dim')),
+        borderColor:     vals.map(v => v >= 0 ? cssVar('--green')     : cssVar('--red')),
         borderWidth: 1.5,
         borderRadius: 6,
       }],
@@ -252,8 +257,8 @@ export function chartStatus(rows) {
   if (badge) badge.textContent = `${rows.length} total`;
 
   const order  = ['Ganhou', 'Perdeu', 'Pendente', 'Anulada'];
-  const bgs    = ['var(--green-dim)', 'var(--red-dim)', '#c0800022', '#6a728a18'];
-  const border = ['var(--green)',     'var(--red)',     'var(--yellow)', 'var(--text3)'];
+  const bgs    = [cssVar('--green-dim'), cssVar('--red-dim'), '#c0800022', '#6a728a18'];
+  const border = [cssVar('--green'),     cssVar('--red'),     cssVar('--yellow'), cssVar('--text3')];
 
   const active = order.filter(k => counts[k] > 0);
 
