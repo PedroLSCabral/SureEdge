@@ -2,8 +2,6 @@
 
 Dashboard de análise para arbitragem esportiva (surebets), integrado com Google Sheets. Visualiza lucro acumulado, performance por casa e esporte, histórico de operações e métricas gerais.
 
-![Temas: claro, slate e escuro](.github/preview.png)
-
 ## Funcionalidades
 
 - **Integração com Google Sheets** via URL pública CSV — sem backend, sem banco de dados
