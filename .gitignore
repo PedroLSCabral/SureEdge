@@ -1,0 +1,35 @@
+# ─── Sistema operacional ──────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Editores ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Servidores de desenvolvimento ────────────────────────────────────────────
+# (o projeto não tem build, mas caso use ferramentas futuras)
+node_modules/
+.cache/
+dist/
+build/
+
+# ─── Dados sensíveis ──────────────────────────────────────────────────────────
+# Nunca versionar URLs de planilhas ou dados financeiros reais
+.env
+.env.local
+*.csv
+dados/
+data/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
