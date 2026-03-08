@@ -16,8 +16,9 @@ export function mapHeaders(headers) {
 // ─── VALUE PARSERS ────────────────────────────────────────────────────────────
 export function parseDate(str) {
   if (!str) return new Date(0);
-  const m = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  // Captura DD/MM/YYYY e opcionalmente HH:MM ou HH:MM:SS
+  const m = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
   return new Date(str);
 }
 

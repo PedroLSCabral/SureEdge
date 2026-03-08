@@ -67,8 +67,9 @@ export function chartLucroAcumulado(rows) {
 
     for (const r of sorted) {
       acc = +(acc + r.lucro).toFixed(2);
-      const t = r.data.slice(-5);
-      labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + t);
+      const hh = String(r._date.getHours()).padStart(2, '0');
+      const mm = String(r._date.getMinutes()).padStart(2, '0');
+      labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + hh + ':' + mm);
       dataAcc.push(acc);
       ptColors.push(r.lucro >= 0 ? clr('green') : clr('red'));
       ptSizes.push(r.lucro < 0 ? 6 : 4);
