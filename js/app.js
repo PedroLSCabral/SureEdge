@@ -1,4 +1,5 @@
 import { AUTO_REFRESH_MS } from './config.js';
+import { storageGet, storageSet } from './storage.js';
 import { csvToRows, groupLegs } from './parser.js';
 import { fetchSheet } from './fetch.js';
 import { generateDemo } from './demo.js';
@@ -10,7 +11,7 @@ import { initTheme } from './theme.js';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let allRows      = [];
-let sheetUrl     = localStorage.getItem('surebetSheetUrl') || null;
+let sheetUrl     = storageGet('surebetSheetUrl');
 let refreshTimer = null;
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ function bindEvents() {
     const url = document.getElementById('sheetUrlInput').value.trim();
     if (!url) return;
     sheetUrl = url;
-    localStorage.setItem('surebetSheetUrl', url);
+    storageSet('surebetSheetUrl', url);
     await loadAndRender(url);
   });
 
@@ -186,7 +187,7 @@ function init() {
   bindEvents();
 
   if (sheetUrl) {
-    document.getElementById('sheetUrlInput').value = sheetUrl;
+    if (sheetUrl) document.getElementById('sheetUrlInput').value = sheetUrl;
     loadAndRender(sheetUrl);
   }
 }
