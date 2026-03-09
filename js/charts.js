@@ -7,6 +7,27 @@ Chart.defaults.font.size   = 11;
 
 const chartInstances = {};
 
+// ─── THEME PALETTE ────────────────────────────────────────────────────────────
+// CSS variables não funcionam no canvas — usamos valores resolvidos por tema.
+const PALETTE = {
+  light: {
+    green: '#00a854', greenDim: '#00a85418', red: '#e0253a', redDim: '#e0253a14',
+    blue: '#1a6fd4', yellow: '#c08000', text3: '#9098b0', grid: '#e2e4ea',
+  },
+  slate: {
+    green: '#2ecc85', greenDim: '#2ecc8520', red: '#f04058', redDim: '#f0405820',
+    blue: '#5b9cf6', yellow: '#e8b840', text3: '#565e78', grid: '#363c52',
+  },
+  dark: {
+    green: '#00e87a', greenDim: '#00e87a22', red: '#ff3d5a', redDim: '#ff3d5a22',
+    blue: '#4d9fff', yellow: '#f0c040', text3: '#4a5068', grid: '#1e2230',
+  },
+};
+function clr(key) {
+  const t = document.documentElement.getAttribute('data-theme') || 'slate';
+  return (PALETTE[t] || PALETTE.slate)[key];
+}
+
 function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
@@ -39,11 +60,11 @@ export function chartLucroAcumulado(rows) {
     const labels = [], dataAcc = [], ptColors = [], ptSizes = [];
 
     for (const r of sorted) {
-      acc = +(acc + r.lucro).toFixed(2);
+      acc += r.lucro;
       const t = r.data.slice(-5);
       labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + t);
-      dataAcc.push(acc);
-      ptColors.push(r.lucro >= 0 ? 'var(--green)' : 'var(--red)');
+      dataAcc.push(+acc.toFixed(2));
+      ptColors.push(r.lucro >= 0 ? clr('green') : clr('red'));
       ptSizes.push(r.lucro < 0 ? 6 : 4);
     }
 
@@ -62,7 +83,7 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
+      badge.style.color = isPos ? clr('green') : clr('red');
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
@@ -71,7 +92,7 @@ export function chartLucroAcumulado(rows) {
         {
           label: 'Acum. por aposta',
           data: dataAcc,
-          borderColor: isPos ? 'var(--green)' : 'var(--red)',
+          borderColor: isPos ? clr('green') : clr('red'),
           backgroundColor: grad,
           borderWidth: 2,
           pointRadius: ptSizes,
@@ -87,7 +108,7 @@ export function chartLucroAcumulado(rows) {
           pointRadius: dayEndData.map(v => v !== null ? 8 : 0),
           pointStyle: 'rectRot',
           pointBackgroundColor: dayEndData.map(v =>
-            v === null ? 'transparent' : v >= 0 ? 'var(--blue)' : 'var(--red)'
+            v === null ? 'transparent' : v >= 0 ? clr('blue') : clr('red')
           ),
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
@@ -114,16 +135,20 @@ export function chartLucroAcumulado(rows) {
   } else {
     const byDay = {}, dayOrder = [];
     for (const r of sorted) {
-      const k = r._date.toLocaleDateString('pt-BR');
-      if (!byDay[k]) { byDay[k] = 0; dayOrder.push(k); }
-      byDay[k] += r.lucro;
+      // Chave estável YYYY-MM-DD evita variações de toLocaleDateString entre browsers
+      const d = r._date;
+      const isoKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!(isoKey in byDay)) { byDay[isoKey] = 0; dayOrder.push(isoKey); }
+      byDay[isoKey] += r.lucro;
     }
     let acc = 0;
     const labels = [], data = [];
     for (const k of dayOrder) {
-      acc = +(acc + byDay[k]).toFixed(2);
-      labels.push(k);
-      data.push(acc);
+      acc += byDay[k];
+      // Formata label como dd/mm/yyyy para exibição
+      const [y, mo, dy] = k.split('-');
+      labels.push(`${dy}/${mo}/${y}`);
+      data.push(+acc.toFixed(2));
     }
 
     const isPos = data[data.length - 1] >= 0;
@@ -133,18 +158,18 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
+      badge.style.color = isPos ? clr('green') : clr('red');
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets: [{
         data,
-        borderColor: isPos ? 'var(--green)' : 'var(--red)',
+        borderColor: isPos ? clr('green') : clr('red'),
         backgroundColor: grad,
         borderWidth: 2,
         pointRadius: labels.length > 30 ? 0 : 3,
-        pointBackgroundColor: isPos ? 'var(--green)' : 'var(--red)',
+        pointBackgroundColor: isPos ? clr('green') : clr('red'),
         tension: 0.35, fill: true,
       }]},
       options: {
@@ -221,8 +246,8 @@ export function chartCasa(rows) {
       labels: sorted.map(s => s[0]),
       datasets: [{
         data: vals,
-        backgroundColor: vals.map(v => v >= 0 ? 'var(--green-dim)' : 'var(--red-dim)'),
-        borderColor:     vals.map(v => v >= 0 ? 'var(--green)'     : 'var(--red)'),
+        backgroundColor: vals.map(v => v >= 0 ? clr('greenDim') : clr('redDim')),
+        borderColor:     vals.map(v => v >= 0 ? clr('green')     : clr('red')),
         borderWidth: 1.5,
         borderRadius: 6,
       }],
@@ -252,8 +277,8 @@ export function chartStatus(rows) {
   if (badge) badge.textContent = `${rows.length} total`;
 
   const order  = ['Green', 'Meio Green', 'Red', 'Meio Red', 'Devolvido', 'Pendente'];
-  const bgs    = ['#00a85418', '#5fcf8520', 'var(--red-dim)', '#e0708020', '#6a728a18', '#c0800022'];
-  const border = ['#00a854',   '#5fcf85',   'var(--red)',     '#e07080',   'var(--text3)', 'var(--yellow)'];
+  const bgs    = ['#00a85418', '#5fcf8520', clr('redDim'), '#e0708020', '#6a728a18', '#c0800022'];
+  const border = ['#00a854',   '#5fcf85',   clr('red'),     '#e07080',   clr('text3'), clr('yellow')];
 
   const active = order.filter(k => counts[k] > 0);
 
