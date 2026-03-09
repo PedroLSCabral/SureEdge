@@ -1,5 +1,5 @@
 import { AUTO_REFRESH_MS } from './config.js';
-import { initAuth, signIn, isSignedIn } from './auth.js';
+import { initAuth, signIn, isSignedIn, clearAuthToken } from './auth.js';
 import { storageGet, storageSet, saveCache, loadCache, clearCache } from './storage.js';
 import { extractSpreadsheetId, findOperationRows, writeResults } from './editor.js';
 import { setEditCallback } from './table.js';
@@ -183,6 +183,8 @@ function bindEvents() {
   document.getElementById('btnReset')?.addEventListener('click', () => {
     if (!confirm('Resetar configuração? Isso vai limpar a planilha conectada e voltar para a tela inicial.')) return;
     clearCache();
+    clearAuthToken();
+    localStorage.removeItem('surebetHadAuth');
     storageSet('surebetSheetUrl', null);
     document.documentElement.style.removeProperty('--overlay-display');
     document.getElementById('mainContent').style.display  = 'none';
