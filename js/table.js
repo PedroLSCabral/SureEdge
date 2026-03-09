@@ -63,7 +63,7 @@ export function renderTable(rows) {
         </td>
         <td style="color:var(--text2)">${r.esporte}</td>
         <td>
-          <a class="evento-link" href="https://www.sofascore.com/search/${encodeURIComponent(r.evento)}" target="_blank" rel="noopener noreferrer">${r.evento}</a>
+          <a class="evento-link" href="https://www.google.com/search?q=${encodeURIComponent(r.evento + ' site:sofascore.com')}" target="_blank" rel="noopener noreferrer" title="Buscar no Sofascore via Google">${r.evento}</a>
           <div style="color:var(--text3);font-size:11px;margin-top:2px">${r.mercado}</div>
         </td>
         <td style="font-family:var(--mono)">${fmtBRL(r.stake)}</td>
