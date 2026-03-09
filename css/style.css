@@ -533,3 +533,12 @@ td.profit-neg { color: var(--red);   font-family: var(--mono); font-weight: 700;
 .status-badge.red        { background: #e0253a14; color: #e0253a; }
 .status-badge.meio-red   { background: #e0708020; color: #c04050; }
 .status-badge.devolvido  { background: #6a728a18; color: var(--text3); }
+
+/* ─── LUCRO ESTIMADO ──────────────────────────────────────────────────────── */
+
+.lucro-estimado {
+  color: var(--yellow);
+  font-family: var(--mono);
+  font-weight: 700;
+  cursor: default;
+}

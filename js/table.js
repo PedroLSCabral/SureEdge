@@ -72,7 +72,12 @@ export function renderTable(rows) {
           ${r.arb ? r.arb.toFixed(2) + '%' : '–'}
         </td>
         <td class="${r.lucro > 0 ? 'profit-pos' : r.lucro < 0 ? 'profit-neg' : ''}"
-            style="${r.lucro === 0 ? 'color:var(--text3)' : ''}">${fmtBRL(r.lucro)}</td>
+            style="${r.lucro === 0 && r.status !== 'Pendente' ? 'color:var(--text3)' : ''}">
+          ${r.status === 'Pendente' && r.lucroEstimado !== null
+            ? `<span class="lucro-estimado" title="Lucro estimado (média das pernas)">~${fmtBRL(r.lucroEstimado)}</span>`
+            : fmtBRL(r.lucro)
+          }
+        </td>
         <td><span class="status-badge ${badgeClass(r.status)}">${r.status}</span></td>
         <td>${r.status === 'Pendente' ? `<button class="btn-edit" data-ts="${r.data}">Editar</button>` : ''}</td>
       </tr>

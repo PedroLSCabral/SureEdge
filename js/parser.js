@@ -16,9 +16,8 @@ export function mapHeaders(headers) {
 // ─── VALUE PARSERS ────────────────────────────────────────────────────────────
 export function parseDate(str) {
   if (!str) return new Date(0);
-  // Captura DD/MM/YYYY e opcionalmente HH:MM ou HH:MM:SS
-  const m = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
-  if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  const m = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
   return new Date(str);
 }
 
@@ -102,6 +101,15 @@ export function groupLegs(rows) {
     else if (rawResolved)    status = 'Anulada';
     else                     status = 'Pendente';
 
+    // Lucro estimado para operações pendentes:
+    // média do retorno líquido de cada perna se ela ganhar
+    // ((Stake1 * Odd1) - StakeTotal + (Stake2 * Odd2) - StakeTotal) / 2
+    let lucroEstimado = null;
+    if (status === 'Pendente' && legs.length >= 2) {
+      const sum = legs.reduce((s, l) => s + (l.stake * l.odd - stake), 0);
+      lucroEstimado = +(sum / legs.length).toFixed(2);
+    }
+
     return {
       data:     a.data,
       _date:    a._date,
@@ -113,6 +121,7 @@ export function groupLegs(rows) {
       arb,
       stake,
       lucro,
+      lucroEstimado,
       status,
       _legs:    legs,
     };
