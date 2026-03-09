@@ -70,9 +70,9 @@ A planilha deve ter uma aba com os seguintes cabeçalhos na **linha 1** (nomes e
 
 > **Para múltiplas abas mensais:** crie uma aba `TOTAL` com a fórmula abaixo na célula A2 (cabeçalho em A1):
 > ```
-> ={JANEIRO!A5:K100; FEVEREIRO!A5:K100; MARÇO!A5:K100; …}
+> ={DEZEMBRO!A5:K100; JANEIRO!A5:K100; FEVEREIRO!A5:K100; MARÇO!A5:K100; …}
 > ```
-> Ordene os meses na fórmula de acordo com o início real da sua operação, para manter a ordem cronológica correta no gráfico de lucro acumulado.
+> DEZEMBRO vem primeiro por ser do ano anterior.
 
 ### 3. Publicar no Google Sheets
 
@@ -137,6 +137,7 @@ Nenhuma dependência de build. Nenhum `npm install`.
 - [ ] Meta mensal com barra de progresso e projeção
 - [ ] Exportar relatório PDF
 - [ ] Scatter plot Arb% × Lucro real
+- [ ] **Link direto para partida via Google Custom Search API** — busca automática em Sofascore/Flashscore pelo nome do evento (atualmente usa link de busca como placeholder)
 - [ ] Integração com plataforma financeira pessoal (renda USD + Carnê-Leão)
 
 ## Licença

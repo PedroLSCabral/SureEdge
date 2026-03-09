@@ -542,3 +542,17 @@ td.profit-neg { color: var(--red);   font-family: var(--mono); font-weight: 700;
   font-weight: 700;
   cursor: default;
 }
+
+/* ─── EVENTO LINK ─────────────────────────────────────────────────────────── */
+
+.evento-link {
+  color: var(--text);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color .15s;
+}
+.evento-link:hover {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
