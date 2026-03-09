@@ -179,6 +179,19 @@ function bindEvents() {
     renderTable(filterRows(allRows));
   });
 
+  // Reset
+  document.getElementById('btnReset')?.addEventListener('click', () => {
+    if (!confirm('Resetar configuração? Isso vai limpar a planilha conectada e voltar para a tela inicial.')) return;
+    clearCache();
+    storageSet('surebetSheetUrl', null);
+    document.documentElement.style.removeProperty('--overlay-display');
+    document.getElementById('mainContent').style.display  = 'none';
+    document.getElementById('setupOverlay').style.display = 'flex';
+    document.getElementById('sheetUrlInput').value = '';
+    sheetUrl = null;
+    allRows  = [];
+  });
+
   // Paginação
   document.getElementById('btnPrevPage')?.addEventListener('click', () => {
     if (tableState.currentPage > 1) {
