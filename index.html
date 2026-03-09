@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="slate">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,13 +12,23 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Styles -->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+  <script>
+    // Esconde a overlay antes do primeiro paint se já há URL salva.
+    // Evita o flash da tela de configuração ao voltar de outra página.
+    try {
+      if (localStorage.getItem('surebetSheetUrl')) {
+        document.documentElement.style.setProperty('--overlay-display', 'none');
+      }
+    } catch {}
+  </script>
 </head>
 <body>
 
 <div class="loading-bar" id="loadingBar"></div>
 
 <!-- ── SETUP OVERLAY ─────────────────────────────────────────────────────── -->
-<div class="setup-overlay" id="setupOverlay">
+<div class="setup-overlay" id="setupOverlay" style="display:var(--overlay-display,flex)">
   <div class="setup-card">
     <div class="setup-tag">⬡ Configuração inicial</div>
     <h2>Conectar Google Sheets</h2>
@@ -62,13 +72,12 @@
 <!-- ── TOPBAR ─────────────────────────────────────────────────────────────── -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="logo"></div>
-    <span>SURE<em>EDGE</em></span>
+    <a href="index.html"><img src="assets/logo.png" alt="SureEdge" style="height:42px;width:auto;display:block"></a>
   </div>
   <div class="topbar-right">
     <!-- Theme switcher -->
     <div class="theme-switcher" id="themeSwitcher">
-      <button class="theme-btn active" data-theme="light" title="Claro">
+      <button class="theme-btn" data-theme="light" title="Claro">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
           <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -77,7 +86,7 @@
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
       </button>
-      <button class="theme-btn" data-theme="slate" title="Slate">
+      <button class="theme-btn active" data-theme="slate" title="Slate">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/>
         </svg>
@@ -95,6 +104,13 @@
         <div class="toggle-track"><div class="toggle-thumb"></div></div>
       </div>
     </label>
+    <!-- Analysis link -->
+    <a href="analysis.html" class="nav-link" title="Análise com IA">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      Análise IA
+    </a>
     <!-- Login button -->
     <button class="btn-login" id="btnLogin" title="Login com Google para editar a planilha">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -121,7 +137,6 @@
         <button class="period-tab active" data-days="7">7d</button>
         <button class="period-tab" data-days="14">14d</button>
         <button class="period-tab" data-days="30">30d</button>
-        <button class="period-tab" data-days="90">90d</button>
         <button class="period-tab" data-days="0">Tudo</button>
         <button class="period-tab" data-mode="month">Mês</button>
         <button class="period-tab" data-mode="custom">Personalizado</button>
@@ -129,11 +144,10 @@
       <div class="filter-extra" id="filterMonth" style="display:none">
         <select class="filter-select" id="monthSelect"></select>
       </div>
-      <div class="filter-extra" id="filterCustom" style="display:none">
+      <div class="filter-extra" id="filterCustom" style="display:none;align-items:center;gap:6px">
         <input type="date" class="filter-date" id="dateFrom">
-        <span style="color:var(--text3);font-size:13px">até</span>
+        <span style="color:var(--text3);font-size:13px">–</span>
         <input type="date" class="filter-date" id="dateTo">
-        <button class="btn-apply" id="btnApply">Aplicar</button>
       </div>
     </div>
     <button class="btn-refresh" id="btnRefresh">
@@ -162,12 +176,7 @@
       <div class="kpi-value" id="kpiStake">R$0</div>
       <div class="kpi-sub"   id="kpiStakeSub">total de stakes</div>
     </div>
-    <div class="kpi" style="--kpi-color: var(--green)">
-      <div class="kpi-label">Win Rate</div>
-      <div class="kpi-value" id="kpiWin">0%</div>
-      <div class="kpi-sub"   id="kpiWinSub">resolvidas</div>
-    </div>
-    <div class="kpi">
+<div class="kpi">
       <div class="kpi-label">Lucro Médio/Op</div>
       <div class="kpi-value" id="kpiAvg">R$0</div>
       <div class="kpi-sub">por operação</div>
@@ -242,7 +251,15 @@
     </div>
     <div class="table-footer">
       <span id="tableCount">0 operações</span>
-      <span id="tablePag"></span>
+      <div class="pagination" id="paginationControls" style="display:none">
+        <button class="page-btn" id="btnPrevPage">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span id="tablePag" style="font-family:var(--mono);font-size:11px;color:var(--text3)"></span>
+        <button class="page-btn" id="btnNextPage">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 

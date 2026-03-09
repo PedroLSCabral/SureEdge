@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="slate">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SureEdge — Análise IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <style>
+    /* ── PAGE-SPECIFIC ─────────────────────────────────────────────────────── */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .analysis-grid.full { grid-template-columns: 1fr; }
+
+    .ai-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      position: relative;
+    }
+    .ai-card::before {
+      content: '';
+      position: absolute; top: 0; left: 40px;
+      width: 120px; height: 1px;
+      background: linear-gradient(90deg, var(--blue), transparent);
+    }
+
+    .ai-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .ai-title {
+      font-family: var(--mono); font-size: 11px; font-weight: 400;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--text2);
+    }
+    .ai-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--mono); font-size: 10px; color: var(--blue);
+      background: #1a6fd418; border: 1px solid #1a6fd430;
+      padding: 3px 8px; border-radius: 5px;
+    }
+    .ai-badge svg { animation: spin 2s linear infinite; display: none; }
+    .ai-badge.loading svg { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ai-output {
+      font-size: 14px; color: var(--text2); line-height: 1.8;
+      min-height: 80px;
+    }
+    .ai-output p { margin-bottom: 12px; }
+    .ai-output p:last-child { margin-bottom: 0; }
+    .ai-output strong { color: var(--text); font-weight: 600; }
+    .ai-output .highlight-pos { color: var(--green); font-weight: 600; font-family: var(--mono); }
+    .ai-output .highlight-neg { color: var(--red);   font-weight: 600; font-family: var(--mono); }
+    .ai-output .highlight-neu { color: var(--yellow); font-weight: 600; font-family: var(--mono); }
+
+    .ai-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; padding: 32px 0; color: var(--text3); text-align: center;
+    }
+    .ai-placeholder svg { opacity: .4; }
+    .ai-placeholder p { font-size: 13px; max-width: 280px; line-height: 1.6; }
+
+    .btn-analyze {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--blue); color: #fff; border: none;
+      border-radius: 10px; padding: 10px 20px;
+      font-family: var(--sans); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn-analyze:hover    { opacity: .85; }
+    .btn-analyze:disabled { opacity: .45; cursor: default; }
+
+    .mini-chart { position: relative; height: 180px; margin-top: 4px; }
+
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--mono); font-size: 12px; color: var(--text3);
+      text-decoration: none; transition: color .15s;
+    }
+    .nav-link:hover { color: var(--text); }
+
+    .stat-list { display: flex; flex-direction: column; gap: 8px; }
+    .stat-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: var(--surface2);
+      border-radius: 8px; font-size: 13px;
+    }
+    .stat-row-label { color: var(--text2); }
+    .stat-row-val   { font-family: var(--mono); font-weight: 700; }
+    .stat-pos { color: var(--green); }
+    .stat-neg { color: var(--red); }
+    .stat-neu { color: var(--text3); }
+
+    @media (max-width: 760px) {
+      .analysis-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ── TOPBAR ──────────────────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <a href="index.html"><img src="assets/logo.png" alt="SureEdge" style="height:28px;width:auto;display:block"></a>
+  </div>
+  <div class="topbar-right">
+    <a href="index.html" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Dashboard
+    </a>
+    <div class="theme-switcher" id="themeSwitcher">
+      <button class="theme-btn" data-theme="light" title="Claro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+      <button class="theme-btn active" data-theme="slate" title="Slate">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/>
+        </svg>
+      </button>
+      <button class="theme-btn" data-theme="dark" title="Escuro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">–</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────────────────────────── -->
+<div class="main" id="mainContent">
+
+  <!-- Header row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:var(--text)">Análise das operações</h1>
+      <p style="font-size:13px;color:var(--text3);margin-top:4px" id="dataSubtitle">Carregando dados da planilha…</p>
+    </div>
+
+  </div>
+
+  <!-- Stats row (computed client-side, no AI needed) -->
+  <div class="analysis-grid" id="statsGrid" style="display:none">
+
+    <!-- Lucro por dia da semana -->
+    <div class="ai-card">
+      <div class="ai-header">
+        <span class="ai-title">Lucro por dia da semana</span>
+      </div>
+      <div class="mini-chart"><canvas id="chartWeekday"></canvas></div>
+    </div>
+
+    <!-- Lucro por esporte -->
+    <div class="ai-card">
+      <div class="ai-header">
+        <span class="ai-title">Lucro por esporte</span>
+      </div>
+      <div class="mini-chart"><canvas id="chartSport"></canvas></div>
+    </div>
+
+    <!-- Lucro mensal -->
+    <div class="ai-card" style="grid-column: span 2">
+      <div class="ai-header">
+        <span class="ai-title">Lucro mensal</span>
+      </div>
+      <div class="mini-chart"><canvas id="chartMonthly"></canvas></div>
+    </div>
+
+    <!-- Top stats -->
+    <div class="ai-card">
+      <div class="ai-header">
+        <span class="ai-title">Melhores dias</span>
+      </div>
+      <div class="stat-list" id="statBestDays"></div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-header">
+        <span class="ai-title">Melhores esportes</span>
+      </div>
+      <div class="stat-list" id="statBestSports"></div>
+    </div>
+
+  </div>
+
+      <div class="ai-output" id="aiOutputGeral">
+        <div class="ai-placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <p>Clique em "Analisar com IA" para gerar uma análise detalhada das suas operações.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No data state -->
+  <div id="noDataState" style="display:none;text-align:center;padding:80px 20px">
+    <div style="font-size:32px;margin-bottom:16px">📊</div>
+    <h3 style="font-size:16px;color:var(--text2);margin-bottom:8px">Nenhuma planilha conectada</h3>
+    <p style="font-size:13px;color:var(--text3)">Conecte sua planilha no <a href="index.html" style="color:var(--blue)">dashboard principal</a> primeiro.</p>
+  </div>
+
+</div>
+
+<script type="module">
+import { storageGet, storageSet, loadCache, saveCache } from './js/storage.js';
+import { fetchSheet } from './js/fetch.js';
+import { groupLegs } from './js/parser.js';
+import { applyTheme, initTheme } from './js/theme.js';
+
+// ── PALETTE (mirrors charts.js) ──────────────────────────────────────────────
+const PALETTE = {
+  light: { green:'#00a854',greenDim:'#00a85418',red:'#e0253a',redDim:'#e0253a14',blue:'#1a6fd4',yellow:'#c08000',text3:'#9098b0',grid:'#e2e4ea' },
+  slate: { green:'#2ecc85',greenDim:'#2ecc8520',red:'#f04058',redDim:'#f0405820',blue:'#5b9cf6',yellow:'#e8b840',text3:'#565e78',grid:'#363c52' },
+  dark:  { green:'#00e87a',greenDim:'#00e87a22',red:'#ff3d5a',redDim:'#ff3d5a22',blue:'#4d9fff',yellow:'#f0c040',text3:'#4a5068',grid:'#1e2230' },
+};
+function clr(key) {
+  const t = document.documentElement.getAttribute('data-theme') || 'slate';
+  return (PALETTE[t] || PALETTE.slate)[key];
+}
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let allRows = [];
+const charts = {};
+
+// ── INIT THEME ───────────────────────────────────────────────────────────────
+initTheme(() => { if (allRows.length) renderCharts(); });
+
+// ── LOAD DATA ────────────────────────────────────────────────────────────────
+async function loadData() {
+  const url = storageGet('surebetSheetUrl');
+  if (!url) {
+    document.getElementById('noDataState').style.display = 'block';
+    document.getElementById('dataSubtitle').textContent = 'Nenhuma planilha conectada.';
+    return;
+  }
+
+  // Tenta cache primeiro — evita re-fetch ao navegar de volta
+  const cached = loadCache();
+  if (cached?.length) {
+    allRows = cached.filter(r => r.status !== 'Pendente');
+    onDataReady(true);
+    return;
+  }
+
+  document.getElementById('loadingBar').style.width = '70%';
+  const rows = await fetchSheet(url);
+  document.getElementById('loadingBar').style.width = '100%';
+  setTimeout(() => { document.getElementById('loadingBar').style.width = '0'; }, 400);
+
+  if (!rows?.length) {
+    document.getElementById('dataSubtitle').textContent = 'Erro ao carregar dados.';
+    return;
+  }
+
+  allRows = groupLegs(rows).filter(r => r.status !== 'Pendente');
+  saveCache(allRows);
+
+  onDataReady(false);
+}
+
+function onDataReady(fromCache) {
+  document.getElementById('dataSubtitle').textContent =
+    `${allRows.length} operações resolvidas` + (fromCache ? ' (cache)' : '');
+  document.getElementById('syncDot').className = 'sync-dot ok';
+  document.getElementById('syncLabel').textContent = fromCache ? 'Em cache' : 'Sincronizado';
+  document.getElementById('statsGrid').style.display = 'grid';
+
+  renderCharts();
+}
+
+// ── CHARTS ───────────────────────────────────────────────────────────────────
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function renderCharts() {
+  renderWeekday();
+  renderSport();
+  renderMonthly();
+  renderTopLists();
+}
+
+function renderWeekday() {
+  destroyChart('weekday');
+  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const totals = new Array(7).fill(0);
+  for (const r of allRows) totals[r._date.getDay()] += r.lucro;
+
+  charts['weekday'] = new Chart(document.getElementById('chartWeekday'), {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [{
+        data: totals.map(v => +v.toFixed(2)),
+        backgroundColor: totals.map(v => v >= 0 ? clr('greenDim') : clr('redDim')),
+        borderColor:     totals.map(v => v >= 0 ? clr('green')    : clr('red')),
+        borderWidth: 1.5, borderRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: clr('grid') }, ticks: { callback: v => 'R$'+v } },
+      },
+    },
+  });
+}
+
+function renderSport() {
+  destroyChart('sport');
+  const map = {};
+  for (const r of allRows) map[r.esporte] = (map[r.esporte] || 0) + r.lucro;
+  const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const vals = sorted.map(s => +s[1].toFixed(2));
+  const colors = ['#2ecc85','#5b9cf6','#e8b840','#f04058','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+
+  charts['sport'] = new Chart(document.getElementById('chartSport'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(s => s[0]),
+      datasets: [{
+        data: vals,
+        backgroundColor: vals.map((v,i) => v >= 0 ? colors[i % colors.length]+'33' : clr('redDim')),
+        borderColor:     vals.map((v,i) => v >= 0 ? colors[i % colors.length]       : clr('red')),
+        borderWidth: 1.5, borderRadius: 6,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: clr('grid') }, ticks: { callback: v => 'R$'+v } },
+        y: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+function renderMonthly() {
+  destroyChart('monthly');
+  const map = {};
+  for (const r of allRows) {
+    const key = `${r._date.getFullYear()}-${String(r._date.getMonth()+1).padStart(2,'0')}`;
+    map[key] = (map[key] || 0) + r.lucro;
+  }
+  const sorted = Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
+  const vals = sorted.map(s => +s[1].toFixed(2));
+  const labels = sorted.map(([k]) => {
+    const [y,m] = k.split('-');
+    return new Date(+y, +m-1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+  });
+
+  charts['monthly'] = new Chart(document.getElementById('chartMonthly'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: vals.map(v => v >= 0 ? clr('greenDim') : clr('redDim')),
+        borderColor:     vals.map(v => v >= 0 ? clr('green')    : clr('red')),
+        borderWidth: 1.5, borderRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: clr('grid') }, ticks: { callback: v => 'R$'+v } },
+      },
+    },
+  });
+}
+
+function fmtBRL(v) {
+  const s = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (v < 0 ? '-' : '') + 'R$' + s;
+}
+
+function renderTopLists() {
+  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const dayTotals = new Array(7).fill(0);
+  for (const r of allRows) dayTotals[r._date.getDay()] += r.lucro;
+  const sortedDays = days.map((d,i) => [d, dayTotals[i]]).sort((a,b) => b[1]-a[1]);
+
+  document.getElementById('statBestDays').innerHTML = sortedDays.map(([d,v]) => `
+    <div class="stat-row">
+      <span class="stat-row-label">${d}</span>
+      <span class="stat-row-val ${v > 0 ? 'stat-pos' : v < 0 ? 'stat-neg' : 'stat-neu'}">${fmtBRL(v)}</span>
+    </div>
+  `).join('');
+
+  const sportMap = {};
+  for (const r of allRows) sportMap[r.esporte] = (sportMap[r.esporte] || 0) + r.lucro;
+  const sortedSports = Object.entries(sportMap).sort((a,b) => b[1]-a[1]);
+
+  document.getElementById('statBestSports').innerHTML = sortedSports.map(([s,v]) => `
+    <div class="stat-row">
+      <span class="stat-row-label">${s}</span>
+      <span class="stat-row-val ${v > 0 ? 'stat-pos' : v < 0 ? 'stat-neg' : 'stat-neu'}">${fmtBRL(v)}</span>
+    </div>
+  `).join('');
+}
+
+
+
+loadData();
+</script>
+</body>
+</html>

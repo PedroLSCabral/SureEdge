@@ -9,9 +9,14 @@ let _tokenClient = null;
 let _token       = null;
 let _onSignIn    = null; // callback chamado após login bem-sucedido
 
-// Inicializa o cliente OAuth. Deve ser chamado após o script GSI carregar.
+// Inicializa o cliente OAuth. Aguarda o GSI carregar antes de inicializar.
 export function initAuth(onSignIn) {
   _onSignIn = onSignIn;
+  if (typeof google === 'undefined' || !google.accounts) {
+    // GSI ainda não carregou — tenta novamente após o window load
+    window.addEventListener('load', () => initAuth(onSignIn), { once: true });
+    return;
+  }
   _tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPE,

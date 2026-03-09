@@ -7,12 +7,10 @@ export function fmtBRL(v) {
 
 // ─── UPDATE KPI CARDS ────────────────────────────────────────────────────────
 export function updateKPIs(rows) {
-  const resolved   = rows.filter(r => r.status === 'Ganhou' || r.status === 'Perdeu');
-  const won        = rows.filter(r => r.status === 'Ganhou');
+  const resolved   = rows.filter(r => r.status !== 'Pendente');
   const lucroTotal = rows.reduce((s, r) => s + r.lucro, 0);
   const stakeTotal = rows.reduce((s, r) => s + r.stake, 0);
   const roi        = stakeTotal > 0 ? (lucroTotal / stakeTotal * 100) : 0;
-  const winRate    = resolved.length > 0 ? (won.length / resolved.length * 100) : 0;
   const avgLucro   = rows.length > 0 ? lucroTotal / rows.length : 0;
   const bestRow    = [...rows].sort((a, b) => b.lucro - a.lucro)[0];
 
@@ -29,9 +27,6 @@ export function updateKPIs(rows) {
 
   set('kpiStake',    fmtBRL(stakeTotal));
   set('kpiStakeSub', `${rows.length} stakes`);
-
-  set('kpiWin',    winRate.toFixed(0) + '%');
-  set('kpiWinSub', `${won.length}/${resolved.length} resolvidas`);
 
   set('kpiAvg',    fmtBRL(avgLucro));
   set('kpiBest',   bestRow ? fmtBRL(bestRow.lucro) : 'R$0');

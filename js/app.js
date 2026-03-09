@@ -1,6 +1,6 @@
 import { AUTO_REFRESH_MS } from './config.js';
 import { initAuth, signIn, isSignedIn } from './auth.js';
-import { storageGet, storageSet } from './storage.js';
+import { storageGet, storageSet, saveCache, loadCache, clearCache } from './storage.js';
 import { extractSpreadsheetId, findOperationRows, writeResults } from './editor.js';
 import { setEditCallback } from './table.js';
 import { csvToRows, groupLegs } from './parser.js';
@@ -15,7 +15,7 @@ import { initTheme } from './theme.js';
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let allRows      = [];
 let spreadsheetId = null;
-let sheetUrl     = localStorage.getItem('surebetSheetUrl') || null;
+let sheetUrl     = storageGet('surebetSheetUrl');
 let refreshTimer = null;
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ async function loadAndRender(url, demo = false) {
   if (demo) {
     rows = generateDemo();
   } else {
-    rows = await fetchSheet(url);
+    rows = await fetchSheet(url, showError);
   }
 
   setLoading(false);
@@ -69,6 +69,7 @@ async function loadAndRender(url, demo = false) {
   if (!rows?.length) return;
 
   allRows = groupLegs(rows);
+  saveCache(allRows);
   document.getElementById('setupOverlay').style.display = 'none';
   document.getElementById('mainContent').style.display  = 'block';
   setSyncOk(demo ? 'Demo ativo' : 'Sincronizado');
@@ -100,7 +101,7 @@ function bindEvents() {
     const url = document.getElementById('sheetUrlInput').value.trim();
     if (!url) return;
     sheetUrl = url;
-    localStorage.setItem('surebetSheetUrl', url);
+    storageSet('surebetSheetUrl', url);
     await loadAndRender(url);
   });
 
@@ -112,6 +113,7 @@ function bindEvents() {
   // Atualizar dados
   document.getElementById('btnRefresh')?.addEventListener('click', async () => {
     if (!sheetUrl) return;
+    clearCache();
     document.getElementById('syncDot').className    = 'sync-dot';
     document.getElementById('syncLabel').textContent = 'Atualizando…';
     await loadAndRender(sheetUrl);
@@ -157,8 +159,8 @@ function bindEvents() {
     renderDashboard(allRows);
   });
 
-  // Intervalo personalizado
-  document.getElementById('btnApply')?.addEventListener('click', () => {
+  // Intervalo personalizado — aplica automaticamente ao alterar qualquer data
+  function applyCustomRange() {
     const f = document.getElementById('dateFrom').value;
     const t = document.getElementById('dateTo').value;
     if (!f || !t) return;
@@ -167,11 +169,25 @@ function bindEvents() {
     filterState.customTo.setHours(23, 59, 59);
     tableState.currentPage = 1;
     renderDashboard(allRows);
-  });
+  }
+  document.getElementById('dateFrom')?.addEventListener('change', applyCustomRange);
+  document.getElementById('dateTo')?.addEventListener('change', applyCustomRange);
 
   // Busca na tabela
   document.getElementById('tableSearch')?.addEventListener('input', () => {
     tableState.currentPage = 1;
+    renderTable(filterRows(allRows));
+  });
+
+  // Paginação
+  document.getElementById('btnPrevPage')?.addEventListener('click', () => {
+    if (tableState.currentPage > 1) {
+      tableState.currentPage--;
+      renderTable(filterRows(allRows));
+    }
+  });
+  document.getElementById('btnNextPage')?.addEventListener('click', () => {
+    tableState.currentPage++;
     renderTable(filterRows(allRows));
   });
 
@@ -440,7 +456,19 @@ function init() {
 
   if (sheetUrl) {
     document.getElementById('sheetUrlInput').value = sheetUrl;
-    loadAndRender(sheetUrl);
+
+    // Se há cache válido, renderiza imediatamente sem buscar novos dados
+    const cached = loadCache();
+    if (cached?.length) {
+      allRows = cached;
+      document.getElementById('setupOverlay').style.display = 'none';
+      document.getElementById('mainContent').style.display  = 'block';
+      setSyncOk('Sincronizado');
+      populateMonths(allRows);
+      renderDashboard(allRows);
+    } else {
+      loadAndRender(sheetUrl);
+    }
   }
 }
 

@@ -1,11 +1,10 @@
-import { storageGet, storageSet } from './storage.js';
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const THEMES = ['light', 'slate', 'dark'];
 
 export function applyTheme(theme, redrawFn) {
   if (!THEMES.includes(theme)) theme = 'light';
   document.documentElement.setAttribute('data-theme', theme);
-  storageSet('surebetTheme', theme);
+  localStorage.setItem('surebetTheme', theme);
 
   document.querySelectorAll('.theme-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.theme === theme)
@@ -16,7 +15,7 @@ export function applyTheme(theme, redrawFn) {
 }
 
 export function initTheme(redrawFn) {
-  const saved = storageGet('surebetTheme', 'light');
+  const saved = localStorage.getItem('surebetTheme') || 'light';
   applyTheme(saved, null); // sem redraw na inicialização (dados ainda não carregados)
 
   document.getElementById('themeSwitcher')?.addEventListener('click', e => {

@@ -1,9 +1,7 @@
 import { CORS_PROXIES } from './config.js';
 import { csvToRows } from './parser.js';
-import { showError } from './app.js';
 
 // ─── URL NORMALIZER ───────────────────────────────────────────────────────────
-// Aceita qualquer forma de URL do Google Sheets e converte para CSV público.
 export function extractCsvUrl(url) {
   url = url.trim();
   if (url.includes('output=csv')) return url;
@@ -16,18 +14,14 @@ export function extractCsvUrl(url) {
   return `https://docs.google.com/spreadsheets/d/${m[1]}/pub?gid=${gid}&single=true&output=csv`;
 }
 
-// ─── FETCH WITH CORS FALLBACK ────────────────────────────────────────────────
-// Tenta cada proxy em sequência até obter um CSV válido.
+// ─── FETCH WITH CORS FALLBACK ─────────────────────────────────────────────────
 async function tryFetch(url) {
-  // Cache-busting: evita que o Google sirva versão antiga
   const cacheBust = url + (url.includes('?') ? '&' : '?') + `_cb=${Date.now()}`;
-
   for (const proxy of CORS_PROXIES) {
     try {
       const resp = await fetch(proxy(cacheBust));
       if (!resp.ok) continue;
       const text = await resp.text();
-      // Recebeu HTML → provavelmente página de login ou erro
       if (text.trim().startsWith('<')) continue;
       return text;
     } catch { continue; }
@@ -36,18 +30,20 @@ async function tryFetch(url) {
 }
 
 // ─── MAIN FETCH ───────────────────────────────────────────────────────────────
-export async function fetchSheet(url) {
+// onError é opcional — permite que o chamador decida como exibir erros.
+export async function fetchSheet(url, onError = () => {}) {
   const csvUrl = extractCsvUrl(url);
   if (!csvUrl) {
-    showError('URL inválida. Copie o link direto da planilha do Google Sheets.');
+    onError('URL inválida. Copie o link direto da planilha do Google Sheets.');
     return null;
   }
 
-  document.getElementById('syncLabel').textContent = 'Conectando…';
+  const syncLabel = document.getElementById('syncLabel');
+  if (syncLabel) syncLabel.textContent = 'Conectando…';
 
   const text = await tryFetch(csvUrl);
   if (!text) {
-    showError(
+    onError(
       'Não foi possível carregar a planilha.\n\n' +
       'Causa provável: a planilha não está publicada publicamente.\n' +
       'Solução: Arquivo → Compartilhar → Publicar na web → aba TOTAL → CSV → Publicar.\n\n' +
@@ -58,7 +54,7 @@ export async function fetchSheet(url) {
 
   const rows = csvToRows(text);
   if (!rows || rows.length === 0) {
-    showError(
+    onError(
       'Planilha carregada mas sem dados reconhecidos.\n' +
       'Verifique se o cabeçalho está na linha 1 da aba TOTAL:\n' +
       'DATA APOSTA | CASA | ESPORTE | EVENTO | MERCADO | ODD | STAKE | % | RESULTADO | LUCRO'

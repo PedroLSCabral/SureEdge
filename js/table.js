@@ -93,7 +93,20 @@ export function renderTable(rows) {
   });
 
   document.getElementById('tableCount').textContent = `${total} operações`;
-  document.getElementById('tablePag').textContent   = pages > 1 ? `Página ${page} de ${pages}` : '';
+
+  const pag = document.getElementById('paginationControls');
+  const pagLabel = document.getElementById('tablePag');
+  if (pages > 1) {
+    pag.style.display = 'flex';
+    pagLabel.textContent = `${page} / ${pages}`;
+    document.getElementById('btnPrevPage').disabled = page <= 1;
+    document.getElementById('btnNextPage').disabled = page >= pages;
+    // Clamp currentPage if filter shrunk the results
+    tableState.currentPage = page;
+  } else {
+    pag.style.display = 'none';
+    if (pagLabel) pagLabel.textContent = '';
+  }
 
   // Sort arrows
   document.querySelectorAll('thead th[data-col]').forEach(th => {
