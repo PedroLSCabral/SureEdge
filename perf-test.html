@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="slate">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SureEdge — Performance Tests</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .test-container {
+      max-width: 800px; margin: 40px auto; padding: 0 20px;
+      font-family: var(--mono); font-size: 13px;
+    }
+    h1 { font-size: 18px; color: var(--text); margin-bottom: 6px; }
+    .subtitle { color: var(--text3); font-size: 12px; margin-bottom: 28px; }
+
+    .url-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .setup-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 14px; color: var(--text);
+      font-family: var(--mono); font-size: 12px; outline: none;
+    }
+    .setup-input:focus { border-color: var(--green); }
+    .btn-run {
+      background: var(--green); color: #000; border: none; border-radius: 8px;
+      padding: 10px 20px; font-family: var(--mono); font-size: 12px;
+      font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .btn-run:disabled { opacity: .4; cursor: default; }
+    .btn-clear {
+      background: var(--surface2); color: var(--text2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 12px;
+      cursor: pointer;
+    }
+
+    .suite { margin-bottom: 32px; }
+    .suite-title {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .test-row {
+      display: grid; grid-template-columns: 1fr auto auto;
+      align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      margin-bottom: 6px; transition: border-color .2s;
+    }
+    .test-row.running { border-color: var(--yellow); }
+    .test-row.pass    { border-color: var(--green); }
+    .test-row.fail    { border-color: var(--red); }
+
+    .test-name  { color: var(--text2); font-size: 12px; }
+    .test-value {
+      font-size: 13px; font-weight: 700; text-align: right;
+      min-width: 80px; color: var(--text3);
+    }
+    .test-value.fast   { color: var(--green); }
+    .test-value.medium { color: var(--yellow); }
+    .test-value.slow   { color: var(--red); }
+
+    .test-badge {
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 4px; min-width: 50px; text-align: center;
+    }
+    .badge-pending { background: var(--surface2); color: var(--text3); }
+    .badge-running { background: #f0c04022; color: var(--yellow); }
+    .badge-pass    { background: var(--green-dim); color: var(--green); }
+    .badge-fail    { background: var(--red-dim); color: var(--red); }
+
+    .summary-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; margin-top: 24px;
+      display: none;
+    }
+    .summary-card.visible { display: block; }
+    .summary-title {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 16px;
+    }
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    .summary-stat { text-align: center; }
+    .summary-stat-val { font-size: 24px; font-weight: 700; color: var(--text); }
+    .summary-stat-lbl { font-size: 10px; color: var(--text3); margin-top: 4px; }
+    .summary-stat-val.green { color: var(--green); }
+    .summary-stat-val.yellow { color: var(--yellow); }
+    .summary-stat-val.red { color: var(--red); }
+
+    .log-area {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px; margin-top: 16px;
+      font-size: 11px; color: var(--text3); line-height: 2;
+      max-height: 200px; overflow-y: auto;
+    }
+    .log-line.info  { color: var(--text2); }
+    .log-line.ok    { color: var(--green); }
+    .log-line.warn  { color: var(--yellow); }
+    .log-line.error { color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="loading-bar" id="loadingBar"></div>
+
+<div class="test-container">
+
+  <h1>⬡ Performance Tests</h1>
+  <p class="subtitle">Mede os tempos reais de cada etapa do pipeline de dados.</p>
+
+  <!-- URL input -->
+  <div class="url-row">
+    <input type="text" class="setup-input" id="sheetUrl"
+      placeholder="Cole a URL da planilha (mesmo campo do dashboard)…">
+    <button class="btn-run" id="btnRun">▶ Rodar testes</button>
+    <button class="btn-clear" id="btnClear">Limpar</button>
+  </div>
+
+  <!-- Suite 1: Fetch -->
+  <div class="suite">
+    <div class="suite-title">01 — Fetch do CSV</div>
+    <div class="test-row" id="t-fetch-cached">
+      <span class="test-name">Fetch com cache permitido (normal load)</span>
+      <span class="test-value" id="tv-fetch-cached">–</span>
+      <span class="test-badge badge-pending" id="tb-fetch-cached">pending</span>
+    </div>
+    <div class="test-row" id="t-fetch-forced">
+      <span class="test-name">Fetch forçado sem cache (refresh manual)</span>
+      <span class="test-value" id="tv-fetch-forced">–</span>
+      <span class="test-badge badge-pending" id="tb-fetch-forced">pending</span>
+    </div>
+    <div class="test-row" id="t-fetch-size">
+      <span class="test-name">Tamanho do CSV recebido</span>
+      <span class="test-value" id="tv-fetch-size">–</span>
+      <span class="test-badge badge-pending" id="tb-fetch-size">info</span>
+    </div>
+  </div>
+
+  <!-- Suite 2: Parser -->
+  <div class="suite">
+    <div class="suite-title">02 — Parser & Filtro</div>
+    <div class="test-row" id="t-parse-raw">
+      <span class="test-name">PapaParse — parse do CSV bruto</span>
+      <span class="test-value" id="tv-parse-raw">–</span>
+      <span class="test-badge badge-pending" id="tb-parse-raw">pending</span>
+    </div>
+    <div class="test-row" id="t-parse-filter">
+      <span class="test-name">Filtro de linhas vazias</span>
+      <span class="test-value" id="tv-parse-filter">–</span>
+      <span class="test-badge badge-pending" id="tb-parse-filter">pending</span>
+    </div>
+    <div class="test-row" id="t-parse-map">
+      <span class="test-name">Mapeamento de colunas + csvToRows completo</span>
+      <span class="test-value" id="tv-parse-map">–</span>
+      <span class="test-badge badge-pending" id="tb-parse-map">pending</span>
+    </div>
+    <div class="test-row" id="t-parse-group">
+      <span class="test-name">groupLegs — agrupamento de pernas</span>
+      <span class="test-value" id="tv-parse-group">–</span>
+      <span class="test-badge badge-pending" id="tb-parse-group">pending</span>
+    </div>
+    <div class="test-row" id="t-parse-rows">
+      <span class="test-name">Linhas brutas vs operações agrupadas</span>
+      <span class="test-value" id="tv-parse-rows">–</span>
+      <span class="test-badge badge-pending" id="tb-parse-rows">info</span>
+    </div>
+  </div>
+
+  <!-- Suite 3: End-to-end -->
+  <div class="suite">
+    <div class="suite-title">03 — End-to-End</div>
+    <div class="test-row" id="t-e2e-cold">
+      <span class="test-name">Cold load: fetch + parse + groupLegs (sem cache)</span>
+      <span class="test-value" id="tv-e2e-cold">–</span>
+      <span class="test-badge badge-pending" id="tb-e2e-cold">pending</span>
+    </div>
+    <div class="test-row" id="t-e2e-warm">
+      <span class="test-name">Warm load: mesmos dados do sessionStorage</span>
+      <span class="test-value" id="tv-e2e-warm">–</span>
+      <span class="test-badge badge-pending" id="tb-e2e-warm">pending</span>
+    </div>
+    <div class="test-row" id="t-e2e-forced">
+      <span class="test-name">Forced refresh: fetch sem cache + parse + groupLegs</span>
+      <span class="test-value" id="tv-e2e-forced">–</span>
+      <span class="test-badge badge-pending" id="tb-e2e-forced">pending</span>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-card" id="summaryCard">
+    <div class="summary-title">Resumo</div>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="summary-stat-val" id="sumCold">–</div>
+        <div class="summary-stat-lbl">Cold load</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val" id="sumForced">–</div>
+        <div class="summary-stat-lbl">Refresh manual</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val" id="sumWarm">–</div>
+        <div class="summary-stat-lbl">Warm (cache)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-area" id="logArea"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script type="module">
+import { extractCsvUrl } from './js/fetch.js';
+import { csvToRows, groupLegs } from './js/parser.js';
+import { storageGet, loadCache, saveCache } from './js/storage.js';
+import { CORS_PROXIES } from './js/config.js';
+
+// ── THRESHOLDS (ms) ──────────────────────────────────────────────────────────
+const T = { FAST: 500, MEDIUM: 2000 };
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function ms(val) {
+  if (val === null) return '–';
+  return val < 1000 ? `${Math.round(val)}ms` : `${(val/1000).toFixed(2)}s`;
+}
+
+function speedClass(val) {
+  if (val === null) return '';
+  if (val < T.FAST)   return 'fast';
+  if (val < T.MEDIUM) return 'medium';
+  return 'slow';
+}
+
+function setTest(id, value, status, label = null) {
+  const row   = document.getElementById(`t-${id}`);
+  const valEl = document.getElementById(`tv-${id}`);
+  const badge = document.getElementById(`tb-${id}`);
+  if (!row) return;
+
+  valEl.textContent = label !== null ? label : ms(value);
+  if (typeof value === 'number') valEl.className = `test-value ${speedClass(value)}`;
+
+  row.className   = `test-row ${status}`;
+  badge.className = `test-badge badge-${status}`;
+  badge.textContent = status === 'pass' ? 'ok' : status === 'fail' ? 'fail' : status === 'running' ? '…' : 'info';
+}
+
+function log(msg, type = 'info') {
+  const area = document.getElementById('logArea');
+  const line = document.createElement('div');
+  line.className = `log-line ${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${msg}`;
+  area.appendChild(line);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ── FETCH RAW CSV ─────────────────────────────────────────────────────────────
+async function fetchRaw(url, force = false) {
+  const finalUrl = force
+    ? url + (url.includes('?') ? '&' : '?') + `_cb=${Date.now()}`
+    : url;
+
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const resp = await fetch(proxy(finalUrl), force ? {} : {
+        headers: { 'Cache-Control': 'max-age=120' },
+      });
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      if (text.trim().startsWith('<')) continue;
+      return text;
+    } catch { continue; }
+  }
+  return null;
+}
+
+// ── MAIN TEST RUNNER ──────────────────────────────────────────────────────────
+async function runTests() {
+  const urlInput = document.getElementById('sheetUrl').value.trim()
+    || storageGet('surebetSheetUrl');
+
+  if (!urlInput) {
+    log('Nenhuma URL fornecida. Cole a URL da planilha ou abra o dashboard primeiro.', 'error');
+    return;
+  }
+
+  const csvUrl = extractCsvUrl(urlInput);
+  if (!csvUrl) {
+    log('URL inválida.', 'error');
+    return;
+  }
+
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('summaryCard').classList.remove('visible');
+  log(`Iniciando testes com URL: ${csvUrl.slice(0, 80)}…`);
+
+  let rawCsv = null;
+
+  // ── T1: Fetch com cache ─────────────────────────────────────────────────
+  setTest('fetch-cached', null, 'running');
+  log('Fetch com cache…');
+  const t1s = performance.now();
+  rawCsv = await fetchRaw(csvUrl, false);
+  const t1 = performance.now() - t1s;
+
+  if (!rawCsv) {
+    setTest('fetch-cached', null, 'fail', 'Erro');
+    log('Fetch falhou. Verifique se a planilha está publicada publicamente.', 'error');
+    document.getElementById('btnRun').disabled = false;
+    return;
+  }
+  setTest('fetch-cached', t1, 'pass');
+  log(`Fetch com cache: ${ms(t1)}`, t1 < T.FAST ? 'ok' : t1 < T.MEDIUM ? 'warn' : 'error');
+
+  // ── T2: Fetch forçado ───────────────────────────────────────────────────
+  setTest('fetch-forced', null, 'running');
+  log('Fetch forçado (sem cache)…');
+  const t2s = performance.now();
+  const rawForced = await fetchRaw(csvUrl, true);
+  const t2 = performance.now() - t2s;
+  setTest('fetch-forced', t2, rawForced ? 'pass' : 'fail');
+  log(`Fetch forçado: ${ms(t2)}`, t2 < T.FAST ? 'ok' : t2 < T.MEDIUM ? 'warn' : 'error');
+
+  // ── T3: Tamanho do CSV ──────────────────────────────────────────────────
+  const sizeKb = (new Blob([rawCsv]).size / 1024).toFixed(1);
+  const lineCount = rawCsv.split('\n').length;
+  setTest('fetch-size', null, 'pass', `${sizeKb} KB · ${lineCount.toLocaleString()} linhas`);
+  log(`CSV: ${sizeKb} KB, ${lineCount.toLocaleString()} linhas brutas`);
+
+  // ── T4: PapaParse ───────────────────────────────────────────────────────
+  setTest('parse-raw', null, 'running');
+  const t4s = performance.now();
+  const parsed = Papa.parse(rawCsv, { skipEmptyLines: false });
+  const t4 = performance.now() - t4s;
+  setTest('parse-raw', t4, 'pass');
+  log(`PapaParse: ${ms(t4)} — ${parsed.data.length.toLocaleString()} linhas parseadas`);
+
+  // ── T5: Filtro de linhas vazias ─────────────────────────────────────────
+  setTest('parse-filter', null, 'running');
+  const headers = parsed.data[0] || [];
+  const dataColIdx = headers.findIndex(h =>
+    ['data aposta','data_aposta','data','timestamp','data/hora'].includes(
+      String(h).toLowerCase().trim()
+    )
+  );
+  const t5s = performance.now();
+  const filteredRows = dataColIdx >= 0
+    ? parsed.data.slice(1).filter(row => {
+        const v = (row[dataColIdx] || '').trim();
+        return v.length > 0 && v !== '–';
+      })
+    : parsed.data.slice(1);
+  const t5 = performance.now() - t5s;
+  const skipped = parsed.data.length - 1 - filteredRows.length;
+  setTest('parse-filter', t5, 'pass',
+    `${ms(t5)} · ${filteredRows.length} reais · ${skipped.toLocaleString()} vazias descartadas`);
+  log(`Filtro: ${ms(t5)} — ${skipped.toLocaleString()} linhas vazias removidas, ${filteredRows.length} restantes`);
+
+  // ── T6: csvToRows completo ──────────────────────────────────────────────
+  setTest('parse-map', null, 'running');
+  const t6s = performance.now();
+  const rows = csvToRows(rawCsv);
+  const t6 = performance.now() - t6s;
+  setTest('parse-map', t6, rows?.length ? 'pass' : 'fail');
+  log(`csvToRows: ${ms(t6)} — ${rows?.length || 0} linhas mapeadas`);
+
+  // ── T7: groupLegs ───────────────────────────────────────────────────────
+  setTest('parse-group', null, 'running');
+  const t7s = performance.now();
+  const ops = rows ? groupLegs(rows) : [];
+  const t7 = performance.now() - t7s;
+  setTest('parse-group', t7, ops.length ? 'pass' : 'fail');
+  log(`groupLegs: ${ms(t7)} — ${ops.length} operações agrupadas`);
+
+  // ── T8: Linhas vs operações ─────────────────────────────────────────────
+  const ratio = rows?.length ? (rows.length / ops.length).toFixed(1) : '–';
+  setTest('parse-rows', null, 'pass',
+    `${rows?.length || 0} linhas → ${ops.length} ops (${ratio}x compressão)`);
+
+  // ── T9: End-to-end cold ─────────────────────────────────────────────────
+  setTest('e2e-cold', null, 'running');
+  const te1s = performance.now();
+  const r1 = await fetchRaw(csvUrl, false);
+  const r1rows = r1 ? csvToRows(r1) : null;
+  const r1ops  = r1rows ? groupLegs(r1rows) : [];
+  const te1 = performance.now() - te1s;
+  setTest('e2e-cold', te1, r1ops.length ? 'pass' : 'fail');
+  log(`Cold load total: ${ms(te1)}`, te1 < T.FAST ? 'ok' : te1 < T.MEDIUM ? 'warn' : 'error');
+
+  // ── T10: Warm (sessionStorage) ──────────────────────────────────────────
+  setTest('e2e-warm', null, 'running');
+  saveCache(r1ops);
+  const te2s = performance.now();
+  const cached = loadCache();
+  const te2 = performance.now() - te2s;
+  setTest('e2e-warm', te2, cached?.length ? 'pass' : 'fail');
+  log(`Warm load (cache): ${ms(te2)}`, 'ok');
+
+  // ── T11: Forced refresh ─────────────────────────────────────────────────
+  setTest('e2e-forced', null, 'running');
+  const te3s = performance.now();
+  const r3 = await fetchRaw(csvUrl, true);
+  const r3rows = r3 ? csvToRows(r3) : null;
+  const r3ops  = r3rows ? groupLegs(r3rows) : [];
+  const te3 = performance.now() - te3s;
+  setTest('e2e-forced', te3, r3ops.length ? 'pass' : 'fail');
+  log(`Forced refresh total: ${ms(te3)}`, te3 < T.MEDIUM ? 'ok' : 'warn');
+
+  // ── SUMMARY ─────────────────────────────────────────────────────────────
+  const sumCard = document.getElementById('summaryCard');
+  sumCard.classList.add('visible');
+
+  const setSum = (id, val) => {
+    const el = document.getElementById(id);
+    el.textContent = ms(val);
+    el.className = `summary-stat-val ${speedClass(val)}`;
+  };
+  setSum('sumCold',   te1);
+  setSum('sumForced', te3);
+  setSum('sumWarm',   te2);
+
+  log('─────────────────────────────────────────');
+  log(`RESUMO — Cold: ${ms(te1)} | Forced: ${ms(te3)} | Warm: ${ms(te2)}`);
+  log(`Ganho do cache: ${((te1 - te2) / te1 * 100).toFixed(0)}% mais rápido que cold load`, 'ok');
+
+  document.getElementById('btnRun').disabled = false;
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+document.getElementById('btnRun').addEventListener('click', runTests);
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('summaryCard').classList.remove('visible');
+  ['fetch-cached','fetch-forced','fetch-size',
+   'parse-raw','parse-filter','parse-map','parse-group','parse-rows',
+   'e2e-cold','e2e-warm','e2e-forced'].forEach(id => {
+    const row = document.getElementById(`t-${id}`);
+    if (row) row.className = 'test-row';
+    const val = document.getElementById(`tv-${id}`);
+    if (val) { val.textContent = '–'; val.className = 'test-value'; }
+    const badge = document.getElementById(`tb-${id}`);
+    if (badge) { badge.className = 'test-badge badge-pending'; badge.textContent = 'pending'; }
+  });
+});
+
+// Pre-fill URL from storage
+const saved = storageGet('surebetSheetUrl');
+if (saved) document.getElementById('sheetUrl').value = saved;
+</script>
+</body>
+</html>
