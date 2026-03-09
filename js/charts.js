@@ -11,37 +11,10 @@ function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
 
-// ─── COLOR PALETTE ────────────────────────────────────────────────────────────
-// Chart.js renderiza em <canvas> e não acessa CSS variables.
-// Espelha os temas definidos em css/style.css para garantir cores corretas
-// independente de timing de carregamento (necessário para GitHub Pages).
-const PALETTE = {
-  light: {
-    green:     '#00a854', greenDim: '#00a85418',
-    red:       '#e0253a', redDim:   '#e0253a14',
-    blue:      '#1a6fd4', yellow:   '#c08000',
-    text3:     '#9098b0', grid:     '#e2e4ea',
-  },
-  slate: {
-    green:     '#2ecc85', greenDim: '#2ecc8520',
-    red:       '#f04058', redDim:   '#f0405820',
-    blue:      '#5b9cf6', yellow:   '#e8b840',
-    text3:     '#565e78', grid:     '#363c52',
-  },
-  dark: {
-    green:     '#00e87a', greenDim: '#00e87a22',
-    red:       '#ff3d5a', redDim:   '#ff3d5a22',
-    blue:      '#4d9fff', yellow:   '#f0c040',
-    text3:     '#4a5068', grid:     '#1e2230',
-  },
-};
-
-function clr(key) {
-  const theme = document.documentElement.getAttribute('data-theme') || 'light';
-  return (PALETTE[theme] || PALETTE.light)[key];
+function gridColor() {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue('--chart-grid').trim();
 }
-
-function gridColor() { return clr('grid'); }
 
 // ─── LUCRO ACUMULADO ─────────────────────────────────────────────────────────
 // ≤7 dias: granular por aposta + marcador de fechamento do dia
@@ -67,11 +40,10 @@ export function chartLucroAcumulado(rows) {
 
     for (const r of sorted) {
       acc = +(acc + r.lucro).toFixed(2);
-      const hh = String(r._date.getHours()).padStart(2, '0');
-      const mm = String(r._date.getMinutes()).padStart(2, '0');
-      labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + hh + ':' + mm);
+      const t = r.data.slice(-5);
+      labels.push(r._date.toLocaleDateString('pt-BR').slice(0, 5) + ' ' + t);
       dataAcc.push(acc);
-      ptColors.push(r.lucro >= 0 ? clr('green') : clr('red'));
+      ptColors.push(r.lucro >= 0 ? 'var(--green)' : 'var(--red)');
       ptSizes.push(r.lucro < 0 ? 6 : 4);
     }
 
@@ -90,7 +62,7 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? clr('green') : clr('red');
+      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
@@ -99,7 +71,7 @@ export function chartLucroAcumulado(rows) {
         {
           label: 'Acum. por aposta',
           data: dataAcc,
-          borderColor: isPos ? clr('green') : clr('red'),
+          borderColor: isPos ? 'var(--green)' : 'var(--red)',
           backgroundColor: grad,
           borderWidth: 2,
           pointRadius: ptSizes,
@@ -115,7 +87,7 @@ export function chartLucroAcumulado(rows) {
           pointRadius: dayEndData.map(v => v !== null ? 8 : 0),
           pointStyle: 'rectRot',
           pointBackgroundColor: dayEndData.map(v =>
-            v === null ? 'transparent' : v >= 0 ? clr('blue') : clr('red')
+            v === null ? 'transparent' : v >= 0 ? 'var(--blue)' : 'var(--red)'
           ),
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
@@ -161,18 +133,18 @@ export function chartLucroAcumulado(rows) {
     const badge = document.getElementById('badgeTrend');
     if (badge) {
       badge.textContent = isPos ? '▲ alta' : '▼ queda';
-      badge.style.color = isPos ? clr('green') : clr('red');
+      badge.style.color = isPos ? 'var(--green)' : 'var(--red)';
     }
 
     chartInstances['lucro'] = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets: [{
         data,
-        borderColor: isPos ? clr('green') : clr('red'),
+        borderColor: isPos ? 'var(--green)' : 'var(--red)',
         backgroundColor: grad,
         borderWidth: 2,
         pointRadius: labels.length > 30 ? 0 : 3,
-        pointBackgroundColor: isPos ? clr('green') : clr('red'),
+        pointBackgroundColor: isPos ? 'var(--green)' : 'var(--red)',
         tension: 0.35, fill: true,
       }]},
       options: {
@@ -249,8 +221,8 @@ export function chartCasa(rows) {
       labels: sorted.map(s => s[0]),
       datasets: [{
         data: vals,
-        backgroundColor: vals.map(v => v >= 0 ? clr('greenDim') : clr('redDim')),
-        borderColor:     vals.map(v => v >= 0 ? clr('green')     : clr('red')),
+        backgroundColor: vals.map(v => v >= 0 ? 'var(--green-dim)' : 'var(--red-dim)'),
+        borderColor:     vals.map(v => v >= 0 ? 'var(--green)'     : 'var(--red)'),
         borderWidth: 1.5,
         borderRadius: 6,
       }],
@@ -273,15 +245,15 @@ export function chartCasa(rows) {
 export function chartStatus(rows) {
   destroyChart('status');
 
-  const counts = { Ganhou: 0, Perdeu: 0, Pendente: 0, Anulada: 0 };
+  const counts = {};
   for (const r of rows) counts[r.status] = (counts[r.status] || 0) + 1;
 
   const badge = document.getElementById('badgeStatus');
   if (badge) badge.textContent = `${rows.length} total`;
 
-  const order  = ['Ganhou', 'Perdeu', 'Pendente', 'Anulada'];
-  const bgs    = [clr('greenDim'), clr('redDim'), '#c0800022', '#6a728a18'];
-  const border = [clr('green'),     clr('red'),     clr('yellow'), clr('text3')];
+  const order  = ['Green', 'Meio Green', 'Red', 'Meio Red', 'Devolvido', 'Pendente'];
+  const bgs    = ['#00a85418', '#5fcf8520', 'var(--red-dim)', '#e0708020', '#6a728a18', '#c0800022'];
+  const border = ['#00a854',   '#5fcf85',   'var(--red)',     '#e07080',   'var(--text3)', 'var(--yellow)'];
 
   const active = order.filter(k => counts[k] > 0);
 
