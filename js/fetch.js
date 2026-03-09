@@ -15,11 +15,18 @@ export function extractCsvUrl(url) {
 }
 
 // ─── FETCH WITH CORS FALLBACK ─────────────────────────────────────────────────
-async function tryFetch(url) {
-  const cacheBust = url + (url.includes('?') ? '&' : '?') + `_cb=${Date.now()}`;
+// force=true: adiciona cache-bust para ignorar CDN cache (refresh manual)
+// force=false: deixa o CDN do Google cachear por ~2 min (carregamento normal)
+async function tryFetch(url, force = false) {
+  const finalUrl = force
+    ? url + (url.includes('?') ? '&' : '?') + `_cb=${Date.now()}`
+    : url;
+
   for (const proxy of CORS_PROXIES) {
     try {
-      const resp = await fetch(proxy(cacheBust));
+      const resp = await fetch(proxy(finalUrl), force ? {} : {
+        headers: { 'Cache-Control': 'max-age=120' },
+      });
       if (!resp.ok) continue;
       const text = await resp.text();
       if (text.trim().startsWith('<')) continue;
@@ -30,8 +37,8 @@ async function tryFetch(url) {
 }
 
 // ─── MAIN FETCH ───────────────────────────────────────────────────────────────
-// onError é opcional — permite que o chamador decida como exibir erros.
-export async function fetchSheet(url, onError = () => {}) {
+// force=true garante dados frescos (usado no refresh manual)
+export async function fetchSheet(url, onError = () => {}, force = false) {
   const csvUrl = extractCsvUrl(url);
   if (!csvUrl) {
     onError('URL inválida. Copie o link direto da planilha do Google Sheets.');
@@ -41,7 +48,7 @@ export async function fetchSheet(url, onError = () => {}) {
   const syncLabel = document.getElementById('syncLabel');
   if (syncLabel) syncLabel.textContent = 'Conectando…';
 
-  const text = await tryFetch(csvUrl);
+  const text = await tryFetch(csvUrl, force);
   if (!text) {
     onError(
       'Não foi possível carregar a planilha.\n\n' +

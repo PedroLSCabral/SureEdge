@@ -53,7 +53,7 @@ function renderDashboard(rows) {
 }
 
 // ─── LOAD & RENDER ────────────────────────────────────────────────────────────
-async function loadAndRender(url, demo = false) {
+async function loadAndRender(url, demo = false, force = false) {
   setLoading(true);
   hideError();
 
@@ -61,7 +61,7 @@ async function loadAndRender(url, demo = false) {
   if (demo) {
     rows = generateDemo();
   } else {
-    rows = await fetchSheet(url, showError);
+    rows = await fetchSheet(url, showError, force);
   }
 
   setLoading(false);
@@ -116,7 +116,7 @@ function bindEvents() {
     clearCache();
     document.getElementById('syncDot').className    = 'sync-dot';
     document.getElementById('syncLabel').textContent = 'Atualizando…';
-    await loadAndRender(sheetUrl);
+    await loadAndRender(sheetUrl, false, true);
   });
 
   // Filtros de período

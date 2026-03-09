@@ -48,7 +48,17 @@ export function csvToRows(csv) {
   const get = (row, key, fallback = '–') =>
     map[key] !== undefined ? row[map[key]] : fallback;
 
-  return results.data.slice(1).map(row => {
+  // Filtra linhas sem DATA APOSTA antes de processar — elimina linhas vazias
+  // de fórmulas que se estendem além dos dados reais (ex: dropdown de status)
+  const dataColIdx = map['data'];
+  const dataRows = dataColIdx !== undefined
+    ? results.data.slice(1).filter(row => {
+        const v = (row[dataColIdx] || '').trim();
+        return v.length > 0 && v !== '–';
+      })
+    : results.data.slice(1);
+
+  return dataRows.map(row => {
     const d = parseDate(get(row, 'data', ''));
     return {
       data:       get(row, 'data'),
