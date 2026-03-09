@@ -10,10 +10,21 @@ export const tableState = {
 
 // ─── STATUS BADGE CLASS ───────────────────────────────────────────────────────
 function badgeClass(status) {
-  return { Ganhou: 'won', Perdeu: 'lost', Anulada: 'void' }[status] || 'pending';
+  return {
+    'Green':      'green',
+    'Meio Green': 'meio-green',
+    'Red':        'red',
+    'Meio Red':   'meio-red',
+    'Devolvido':  'devolvido',
+    // Legados (compatibilidade)
+    'Ganhou': 'green', 'Perdeu': 'red', 'Anulada': 'devolvido',
+  }[status] || 'pending';
 }
 
 // ─── RENDER TABLE ────────────────────────────────────────────────────────────
+let _onEdit = null;
+export function setEditCallback(fn) { _onEdit = fn; }
+
 export function renderTable(rows) {
   const query = document.getElementById('tableSearch')?.value.toLowerCase() || '';
 
@@ -63,9 +74,18 @@ export function renderTable(rows) {
         <td class="${r.lucro > 0 ? 'profit-pos' : r.lucro < 0 ? 'profit-neg' : ''}"
             style="${r.lucro === 0 ? 'color:var(--text3)' : ''}">${fmtBRL(r.lucro)}</td>
         <td><span class="status-badge ${badgeClass(r.status)}">${r.status}</span></td>
+        <td>${r.status === 'Pendente' ? `<button class="btn-edit" data-ts="${r.data}">Editar</button>` : ''}</td>
       </tr>
     `).join('');
   }
+
+  // Bind edit buttons
+  tbody.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (_onEdit) _onEdit(btn.dataset.ts);
+    });
+  });
 
   document.getElementById('tableCount').textContent = `${total} operações`;
   document.getElementById('tablePag').textContent   = pages > 1 ? `Página ${page} de ${pages}` : '';
