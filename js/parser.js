@@ -23,16 +23,27 @@ export function parseDate(str) {
 
 export function parseNum(v) {
   if (v === null || v === undefined || v === '') return 0;
-  const s = String(v).replace(/[^\d,.\-]/g, '').replace(',', '.');
+  let s = String(v).trim();
+  // Formato BR: 1.234,56 → remove pontos de milhar, troca vírgula por ponto
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
+  s = s.replace(/[^\d.\-]/g, '');
   return parseFloat(s) || 0;
 }
 
 export function parseStatus(v) {
   if (!v) return 'Pendente';
   const s = String(v).toLowerCase().trim();
-  if (s === 'selecionar' || s === '' || s === '–' || s === '-') return 'Pendente';
-  if (s.includes('gan') || s.includes('win') || s === 'w' || s === '1') return 'Ganhou';
-  if (s.includes('perd') || s.includes('los') || s === 'l' || s === '0') return 'Perdeu';
+  if (!s || s === 'selecionar' || s === '–' || s === '-') return 'Pendente';
+  if (s === 'green')       return 'Green';
+  if (s === 'meio green')  return 'Meio Green';
+  if (s === 'red')         return 'Red';
+  if (s === 'meio red')    return 'Meio Red';
+  if (s.includes('devolv') || s === 'void' || s === 'push') return 'Devolvido';
+  // Legados
+  if (s.includes('gan') || s.includes('win')) return 'Green';
+  if (s.includes('perd') || s.includes('los')) return 'Red';
   return 'Pendente';
 }
 
@@ -106,9 +117,11 @@ export function groupLegs(rows) {
     const rawResolved = legs.find(l => l.status !== 'Pendente');
 
     let status;
-    if      (lucro > 0)      status = 'Ganhou';
-    else if (lucro < 0)      status = 'Perdeu';
-    else if (rawResolved)    status = 'Anulada';
+    const allDevolvido = legs.every(l => l.status === 'Devolvido');
+    if      (allDevolvido)   status = 'Devolvido';
+    else if (lucro > 0)      status = 'Green';
+    else if (lucro < 0)      status = 'Red';
+    else if (rawResolved)    status = rawResolved.status; // preserva Green/Meio Green/Red/Meio Red
     else                     status = 'Pendente';
 
     // Lucro estimado para operações pendentes:
