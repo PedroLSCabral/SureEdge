@@ -21,7 +21,7 @@ export const PAGE_SIZE       = 20;
 export const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutos
 
 // URL base da API de mercado (VPS Oracle)
-export const MARKET_API_URL = 'https://SEU_VPS:8000';
+export const MARKET_API_URL = 'http://localhost:8000';
 
 // CORS proxies tentados em sequência quando fetch direto falha (ex: file://)
 export const CORS_PROXIES = [
