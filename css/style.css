@@ -722,3 +722,35 @@ td.profit-neg { color: var(--red);   font-family: var(--mono); font-weight: 700;
   .kpi-value { font-size: 16px; }
   .period-tab { padding: 5px 9px; font-size: 11px; }
 }
+
+/* ─── MARKET PAGE ─────────────────────────────────────────────────────────── */
+
+.market-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.market-grid.full { grid-template-columns: 1fr; }
+
+.market-chart { position: relative; height: 260px; }
+.market-chart-sm { position: relative; height: 220px; }
+
+.market-error {
+  display: none;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text3);
+}
+.market-error-icon { font-size: 32px; margin-bottom: 12px; }
+.market-error-msg { font-size: 14px; line-height: 1.6; }
+.market-error-retry {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--blue); margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .market-grid { grid-template-columns: 1fr; }
+  .market-chart { height: 220px; }
+  .market-chart-sm { height: 180px; }
+}

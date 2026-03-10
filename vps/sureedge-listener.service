@@ -1,0 +1,15 @@
+[Unit]
+Description=SureEdge Telegram Listener (Telethon)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/sureedge
+EnvironmentFile=/opt/sureedge/.env
+ExecStart=/opt/sureedge/venv/bin/python telethon_listener.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

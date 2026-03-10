@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="slate">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SureEdge — Mercado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ── TOPBAR ──────────────────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <a href="index.html"><img src="assets/logo.png" alt="SureEdge" style="height:28px;width:auto;display:block"></a>
+  </div>
+  <div class="topbar-right">
+    <a href="index.html" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Dashboard
+    </a>
+    <a href="analysis.html" class="nav-link" title="Análise">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      Análise
+    </a>
+    <div class="theme-switcher" id="themeSwitcher">
+      <button class="theme-btn" data-theme="light" title="Claro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+      <button class="theme-btn active" data-theme="slate" title="Slate">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/>
+        </svg>
+      </button>
+      <button class="theme-btn" data-theme="dark" title="Escuro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">–</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────────────────────────── -->
+<div class="main" id="mainContent">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:var(--text)">Análise de Mercado</h1>
+      <p style="font-size:13px;color:var(--text3);margin-top:4px">Oportunidades detectadas pelo bot em tempo real</p>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi" style="--kpi-color:var(--blue)">
+      <div class="kpi-label">Total Oportunidades</div>
+      <div class="kpi-value" id="kpiTotal" style="color:var(--blue)">–</div>
+      <div class="kpi-sub">detectadas pelo bot</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--green)">
+      <div class="kpi-label">ROI Médio</div>
+      <div class="kpi-value" id="kpiAvgRoi" style="color:var(--green)">–</div>
+      <div class="kpi-sub">entre todas as casas</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--yellow)">
+      <div class="kpi-label">Casa Mais Frequente</div>
+      <div class="kpi-value" id="kpiTopCasa" style="color:var(--yellow);font-size:18px">–</div>
+      <div class="kpi-sub">maior aparição</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Horário de Pico</div>
+      <div class="kpi-value" id="kpiPeakHour" style="font-size:18px">–</div>
+      <div class="kpi-sub">mais oportunidades</div>
+    </div>
+  </div>
+
+  <!-- Charts row 1: Casas Freq + ROI -->
+  <div class="market-grid">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Casas Mais Frequentes</span>
+      </div>
+      <div class="market-chart"><canvas id="chartCasasFreq"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">ROI Médio por Casa</span>
+      </div>
+      <div class="market-chart"><canvas id="chartRoiCasas"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Chart: Heatmap (full width) -->
+  <div class="market-grid full">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Heatmap de Horários</span>
+      </div>
+      <div class="market-chart" style="height:380px"><canvas id="chartHorarios"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Chart: Esportes -->
+  <div class="market-grid full">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Distribuição por Esporte</span>
+      </div>
+      <div class="market-chart-sm"><canvas id="chartEsportesMarket"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="market-error" id="marketError">
+    <div class="market-error-icon">📡</div>
+    <div class="market-error-msg" id="marketErrorMsg">Não foi possível conectar à API.</div>
+    <div class="market-error-retry" id="marketRetryCountdown"></div>
+  </div>
+
+</div>
+
+<script type="module" src="js/market.js"></script>
+</body>
+</html>
