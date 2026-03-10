@@ -69,7 +69,7 @@ def parse_message(text: str) -> dict | None:
     dedup = make_dedup_key(casa1, casa2, evento, data_evento, odd1, odd2)
 
     return {
-        "received_at": now.isoformat(timespec="seconds"),
+        "received_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "casas": f"{casa1} x {casa2}",
         "casa1": casa1,
         "casa2": casa2,
