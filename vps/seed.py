@@ -1,7 +1,23 @@
-"""Seed the local DB with sample opportunities for testing market.html."""
+"""Seed the local DB with sample opportunities for testing market.html.
 
-from database import init_db, insert_opportunity
+Usage:
+  python seed.py           — insert sample data (skips duplicates)
+  python seed.py --reset   — wipe DB, then insert sample data
+"""
+
+import sys
+from pathlib import Path
+
+from database import DB_PATH, init_db, insert_opportunity
 from parser import parse_message
+
+
+def reset_db():
+    if DB_PATH.exists():
+        DB_PATH.unlink()
+        print(f"Deleted {DB_PATH}")
+    else:
+        print("No DB found, nothing to delete.")
 
 MESSAGES = [
     """🏘 Casas: Betfast x Pinnacle
@@ -86,6 +102,9 @@ MESSAGES = [
 ]
 
 if __name__ == "__main__":
+    if "--reset" in sys.argv:
+        reset_db()
+
     conn = init_db()
     inserted = 0
     skipped = 0
