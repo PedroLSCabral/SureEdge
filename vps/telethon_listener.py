@@ -4,8 +4,12 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
 
+from dotenv import load_dotenv
 from telethon import TelegramClient, events
+
+load_dotenv(Path(__file__).parent / ".env")
 
 from database import init_db, insert_opportunity
 from parser import parse_message
@@ -21,7 +25,8 @@ log = logging.getLogger("sureedge")
 API_ID = os.environ.get("TELEGRAM_API_ID")
 API_HASH = os.environ.get("TELEGRAM_API_HASH")
 SESSION_FILE = os.environ.get("TELEGRAM_SESSION", "sureedge_session")
-BOT_USERNAME = "greensurebet_bot"
+PHONE        = os.environ.get("TELEGRAM_PHONE")   # opcional, ex: +5511999887766
+BOT_USERNAME = "greensurebet18_bot"
 
 if not API_ID or not API_HASH:
     sys.exit("Set TELEGRAM_API_ID and TELEGRAM_API_HASH environment variables.")
